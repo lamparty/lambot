@@ -8,4 +8,8 @@ async def on_ready():
 	print('lamparty-bot ready')
 	pass
 
+@lampartyBot.event
+async def on_member_join(member):
+    pass
+
 lampartyBot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI')

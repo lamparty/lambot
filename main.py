@@ -1,15 +1,21 @@
 import discord
 from discord.ext import commands
 
-lampartyBot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!')
 
-@lampartyBot.event
+@bot.event
 async def on_ready():
-	print('lamparty-bot ready')
+	global lampartyGuild 
+	lampartyGuild = bot.get_guild(727245965345685514)
+	print(f'ready on "{lampartyGuild}" guild.')
+	#create channels for guest members
+	wc = await lampartyGuild.create_category('for lambot')
+	print(wc.name)
 	pass
 
-@lampartyBot.event
+@bot.event
 async def on_member_join(member):
+	#creating
     pass
 
-lampartyBot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI')
+bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI')

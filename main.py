@@ -9,13 +9,15 @@ async def on_ready():
 	lampartyGuild = bot.get_guild(727245965345685514)
 	print(f'ready on "{lampartyGuild}" guild.')
 	#create channels for guest members
-	wc = await lampartyGuild.create_category('for lambot')
-	print(wc.name)
+	global workCategory
+	workCategory = await lampartyGuild.create_category('for lambot')
+	#get users from db and create guest member channels
 	pass
 
 @bot.event
 async def on_member_join(member):
-	#creating
+	#check user is guest or not
+	#creating guest channel on join and adding user to db
     pass
 
-bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI')
+bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

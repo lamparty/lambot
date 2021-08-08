@@ -31,7 +31,16 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	#check user is guest or not
+	#await member.add_roles('гость')
+	await workCategory.create_text_channel(member.name)
 	#creating guest channel on join and adding user to db
+	pass
+
+@bot.command()
+async def turn_off(ctx):
+	for channel in workCategory.channels:
+		await channel.delete()
+	await workCategory.delete()
 	pass
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

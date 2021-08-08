@@ -3,6 +3,19 @@ from discord.ext import commands
 
 bot = commands.Bot(command_prefix='!')
 
+class user:
+	def __init__(self, discordID):
+		self.id = discordID
+		pass
+	
+	def insertIntoBD(self, collection):  # using with "import pymongo" | put inside user class
+    data = {
+        f'{self.discordID}': f'{self.discordID}',
+        f'{self.mojangUUID}': f'{self.mojangUUID}'
+    }
+    del queue[f'{self.discordID}']
+    return collection.insert_one(data)
+
 @bot.event
 async def on_ready():
 	global lampartyGuild 

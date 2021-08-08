@@ -1,7 +1,9 @@
 import discord
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix='!')
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix='!',intents=intents)
 
 class user:
 	def __init__(self, discordID):
@@ -9,12 +11,11 @@ class user:
 		pass
 	
 	def insertIntoBD(self, collection):  # using with "import pymongo" | put inside user class
-    data = {
-        f'{self.discordID}': f'{self.discordID}',
-        f'{self.mojangUUID}': f'{self.mojangUUID}'
-    }
-    del queue[f'{self.discordID}']
-    return collection.insert_one(data)
+		data = {
+			f'{self.discordID}': f'{self.discordID}',
+			f'{self.mojangUUID}': f'{self.mojangUUID}'
+		}
+		return collection.insert_one(data)
 
 @bot.event
 async def on_ready():
@@ -31,6 +32,6 @@ async def on_ready():
 async def on_member_join(member):
 	#check user is guest or not
 	#creating guest channel on join and adding user to db
-    pass
+	pass
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

@@ -47,7 +47,7 @@ async def on_member_join(member):
 	pass
 
 @bot.command()
-async def turnOff(ctx):
+async def deleteQuestionnaires(ctx):
 	for channel in workCategory.channels:
 		await channel.delete()
 	await workCategory.delete()

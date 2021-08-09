@@ -58,12 +58,13 @@ def insertIntoDB(discordID, collection):
 	data = {
 		'discordID': f'{discordID}'
 	}
+	global registredUsers
 	registredUsers = registredUsersCollection.find()
 	return collection.insert_one(data)
 
 def createQuestionnaire(id):
 	for user in registredUsers:
-		print(id, user['discordID'])
+		print(str(id) == user['discordID'])
 		if (user['discordID'] == str(id)):
 			return False
 	return True

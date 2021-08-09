@@ -12,12 +12,6 @@ lampartyDB = mongoClient.lamparty
 registredUsersCollection = lampartyDB.registred_users
 registredUsers = registredUsersCollection.find()
 
-def createQuestionnaire(id):
-	for user in registredUsers:
-		if (user['discordID'] == str(id)):
-			return False
-	return True
-
 @bot.event
 async def on_ready():
 	global lampartyGuild 
@@ -47,7 +41,7 @@ async def on_member_join(member):
 		await memberChannel.set_permissions(guestRole, read_messages = False)
 		await memberChannel.set_permissions(member, read_messages = True)
 		await memberChannel.send('Hello')
-		insertIntoBD(member.id, registredUsersCollection) # move into 'add_on_server' function
+		insertIntoDB(member.id, registredUsersCollection) # move into 'add_on_server' function
 	else:
 		userRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
 		await member.add_roles(userRole)
@@ -60,10 +54,18 @@ async def deleteQuestionnaires(ctx):
 	await workCategory.delete()
 	pass
 
-def insertIntoBD(discordID, collection):
+def insertIntoDB(discordID, collection):
 	data = {
 		'discordID': f'{discordID}'
 	}
+	registredUsers = registredUsersCollection.find()
 	return collection.insert_one(data)
+
+def createQuestionnaire(id):
+	for user in registredUsers:
+		print(id, user['discordID'])
+		if (user['discordID'] == str(id)):
+			return False
+	return True
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

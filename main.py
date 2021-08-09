@@ -26,8 +26,12 @@ async def on_ready():
 	#create channels for guest members
 	global workCategory
 	workCategory = await lampartyGuild.create_category('Анкеты')
+	
 	global guestRole 
 	guestRole = discord.utils.get(lampartyGuild.roles, name = "гость")
+	await workCategory.set_permissions(guestRole, read_messages = True)
+	await workCategory.set_permissions(bot.user, read_messages = True)
+	await workCategory.set_permissions(lampartyGuild.default_role, read_messages = False)
 	#get users from db and create guest member channels
 	pass
 
@@ -35,7 +39,10 @@ async def on_ready():
 async def on_member_join(member):
 	#check user is guest or not
 	await member.add_roles(guestRole)
-	await workCategory.create_text_channel(member.name)
+	memberChannel = await workCategory.create_text_channel(member.name, sync_permissions=False)
+	await memberChannel.set_permissions(guestRole, read_messages = False)
+	await memberChannel.set_permissions(member, read_messages = True)
+	await memberChannel.send('Hello')
 	#creating guest channel on join and adding user to db
 	pass
 
@@ -46,6 +53,4 @@ async def turnOff(ctx):
 	await workCategory.delete()
 	pass
 
-async def giveRole():
-	pass
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

@@ -34,17 +34,23 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	#check user is guest or not
-	if (createQuestionnaire(member.id)):
+	if (not availableInDB(member.id)):
 		await member.add_roles(guestRole)
 		#creating guest channel on join and adding user to db
 		memberChannel = await workCategory.create_text_channel(member.name, sync_permissions=False)
 		await memberChannel.set_permissions(guestRole, read_messages = False)
 		await memberChannel.set_permissions(member, read_messages = True)
 		await memberChannel.send('Hello')
-		insertIntoDB(member.id, registredUsersCollection) # move into 'add_on_server' function
+		#insertIntoDB(member.id, registredUsersCollection) # move into 'add_on_server' function
 	else:
 		userRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
 		await member.add_roles(userRole)
+	pass
+@bot.event
+async def on_member_remove(member):
+	if (not availableInDB(member.id)):
+		memberChannel = discord.utils.get(workCategory.text_channels, name = member.name)
+		await memberChannel.delete()
 	pass
 
 @bot.command()
@@ -62,11 +68,11 @@ def insertIntoDB(discordID, collection):
 	registredUsers = registredUsersCollection.find()
 	return collection.insert_one(data)
 
-def createQuestionnaire(id):
+def availableInDB(id):
 	for user in registredUsers:
 		print(str(id) == user['discordID'])
 		if (user['discordID'] == str(id)):
-			return False
-	return True
+			return True
+	return False
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

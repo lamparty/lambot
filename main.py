@@ -12,6 +12,12 @@ lampartyDB = mongoClient.lamparty
 registredUsersCollection = lampartyDB.registred_users
 registredUsers = registredUsersCollection.find()
 
+def createQuestionnaire(id):
+	for user in registredUsers:
+		if (user['discordID'] == str(id)):
+			return False
+	return True
+
 @bot.event
 async def on_ready():
 	global lampartyGuild 
@@ -21,7 +27,7 @@ async def on_ready():
 	workCategory = await lampartyGuild.create_category('Анкеты')
 	
 	global guestRole 
-	guestRole = discord.utils.get(lampartyGuild.roles, name = "гость")
+	guestRole = discord.utils.get(lampartyGuild.roles, name = 'гость')
 	
 	print(f'ready on "{lampartyGuild}" guild.')
 	#create channels for guest members
@@ -34,13 +40,17 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	#check user is guest or not
-	await member.add_roles(guestRole)
-	memberChannel = await workCategory.create_text_channel(member.name, sync_permissions=False)
-	await memberChannel.set_permissions(guestRole, read_messages = False)
-	await memberChannel.set_permissions(member, read_messages = True)
-	await memberChannel.send('Hello')
-	insertIntoBD(member.id, registredUsersCollection)
-	#creating guest channel on join and adding user to db
+	if (createQuestionnaire(member.id)):
+		await member.add_roles(guestRole)
+		#creating guest channel on join and adding user to db
+		memberChannel = await workCategory.create_text_channel(member.name, sync_permissions=False)
+		await memberChannel.set_permissions(guestRole, read_messages = False)
+		await memberChannel.set_permissions(member, read_messages = True)
+		await memberChannel.send('Hello')
+		insertIntoBD(member.id, registredUsersCollection) # move into 'add_on_server' function
+	else:
+		userRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
+		await member.add_roles(userRole)
 	pass
 
 @bot.command()

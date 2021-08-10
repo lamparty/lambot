@@ -1,5 +1,6 @@
 import discord
 import pymongo
+from rcon import rcon
 from discord.ext import commands
 from discord.utils import get
 
@@ -66,9 +67,9 @@ async def deleteQ(ctx):
 	await questionnairesCategory.delete()
 	pass
 
-def insertIntoDB(discordID, collection):
+def insertIntoDB(discordUser, collection):
 	data = {
-		'discordID': f'{discordID}'
+		'discordID': f'{discordUser.id}'
 	}
 	global registredUsers
 	registredUsers = registredUsersCollection.find()
@@ -79,5 +80,12 @@ def is_registred(discordUser):
 		if (str(discordUser.id) == str(user['discordID'])):
 			return True
 	return False
+
+async def add_to_server(discordUser):
+	#inserting into DB, add to whitelist on two servers, change role, nick and delete memberChannel
+	insertIntoDB(discordUser)
+	lampartyCreativeResponce = await rcon(f'whitelist add {discordUser.nick}', host='135.181.126.191', port=25658, passwd='bF52JuRi')
+	lampartyResonce = await rcon(f'whitelist add {discordUser.nick}', host='95.216.92.76', port=25861, passwd='1O4CnTkm')
+
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

@@ -1,5 +1,6 @@
 import discord
 import pymongo
+import asyncio
 from rcon import rcon
 from discord.ext import commands
 from discord.utils import get
@@ -8,6 +9,7 @@ from discord.utils import get
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='!',intents=intents)
+logging = True
 
 #connection to db
 mongoClient = pymongo.MongoClient('localhost', 27017)
@@ -16,14 +18,24 @@ registredUsersCollection = lampartyDB.registred_users
 
 registredUsers = registredUsersCollection.find()
 
+#questions
+
+questions = [
+	"Ваш ник Minecraft."
+	,"Сколько вам лет?"
+	, "Как вы нашли наш сервер?"
+	, "Чем планируете заниматься на сервере?"
+	, "Как давно вы играете в Minecraft?"
+	, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
+	, "Ознакомились ли вы с правилами сервера?"
+	, "Кого нужно брать с собой на вечеринку?"
+]
+
 @bot.event
 async def on_ready():
-	#getting guild
+	#getting guild and player role
 	global lampartyGuild
 	lampartyGuild = bot.get_guild(727245965345685514)
-
-	#getting roles
-	global guestRole
 	global playerRole
 	playerRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
 
@@ -37,11 +49,11 @@ async def on_ready():
 
 	#creating text channels for every guest
 
-	
 	return print(f'{bot.user.name} ready on "{lampartyGuild}" guild.')
 
 @bot.event
 async def on_member_join(member):
+	if logging: print(f"{member} just join server.")
 	if (is_registred(member)):
 		await member.add_roles(playerRole)
 	else:
@@ -51,6 +63,21 @@ async def on_member_join(member):
 		await memberChannel.set_permissions(member, read_messages = True)
 		await memberChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
 		await memberChannel.send('Hello')
+		await startForm(memberChannel)
+	pass
+
+async def startForm(ctx):
+	await ctx.send(questions[0])
+	def check(m):
+		return m.author.name == ctx.name
+	for questionID in range(1, len(questions)):
+		try:
+			await bot.wait_for('message', timeout = 120.0, check = check)
+		except asyncio.TimeoutError:
+			return print("stopped")
+		else:
+			await ctx.send(questions[questionID])
+	await ctx.send("end")
 	pass
 
 @bot.event
@@ -58,10 +85,11 @@ async def on_member_remove(member):
 	if (not is_registred(member)):
 		memberChannel = discord.utils.get(formsCategory.text_channels, name = member.name)
 		await memberChannel.delete()
+	if logging: print(f"{member} just leave server.")
 	pass
 
 @bot.command()
-async def deleteQ(ctx):
+async def delForms(ctx):
 	for channel in formsCategory.channels:
 		await channel.delete()
 	await formsCategory.delete()
@@ -70,23 +98,22 @@ async def deleteQ(ctx):
 @bot.command()
 async def giveRole(ctx):
 	insertIntoDB(ctx.message.author, registredUsersCollection)
-	registredUsers = registredUsersCollection.find()
 	pass
 
 def insertIntoDB(discordUser, collection):
 	data = {
-		'discordID': f'{discordUser.id}'
+		'discordID': discordUser.id
 	}
-	global registredUsers
-	registredUsers = registredUsersCollection.find()
 	return collection.insert_one(data)
 
 def is_registred(discordUser):
-	print(discordUser, registredUsers)
+	global registredUsers
+	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
-		#print(str(discordUser.id) == str(user['discordID']), str(discordUser.id), str(user['discordID']))
-		if (str(discordUser.id) == str(user['discordID'])):
+		if (discordUser.id == user["discordID"]):
+			if logging: print(f"{discordUser} is registred")
 			return True
+	if logging: print(f"{discordUser} isn't registred")
 	return False
 
 async def add_to_server(discordUser):

@@ -25,46 +25,52 @@ async def on_ready():
 	#getting roles
 	global guestRole
 	global playerRole
-	guestRole = discord.utils.get(lampartyGuild.roles, name = 'гость')
 	playerRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
 
 	#create categoryChannel for guests only
-	global questionnairesCategory
-	questionnairesCategory = await lampartyGuild.create_category('Анкеты')
+	global formsCategory
+	formsCategory = await lampartyGuild.create_category('Анкеты')
 
-	await questionnairesCategory.set_permissions(guestRole, read_messages = True)
-	await questionnairesCategory.set_permissions(bot.user, read_messages = True)
-	await questionnairesCategory.set_permissions(lampartyGuild.default_role, read_messages = False)
+	await formsCategory.set_permissions(playerRole, read_messages = False)
+	await formsCategory.set_permissions(bot.user, read_messages = True)
+	await formsCategory.set_permissions(lampartyGuild.default_role, read_messages = True)
 
+	#creating text channels for every guest
+
+	
 	return print(f'{bot.user.name} ready on "{lampartyGuild}" guild.')
 
 @bot.event
 async def on_member_join(member):
-	if (is_registred(member.id)):
+	if (is_registred(member)):
 		await member.add_roles(playerRole)
 	else:
 		#creating memberChannel
-		memberChannel = await questionnairesCategory.create_text_channel(member.name, sync_permissions=False)
+		memberChannel = await formsCategory.create_text_channel(member.name, sync_permissions=False)
 
-		await memberChannel.set_permissions(guestRole, read_messages = False)
 		await memberChannel.set_permissions(member, read_messages = True)
+		await memberChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
 		await memberChannel.send('Hello')
-
-		await member.add_roles(guestRole)
 	pass
 
 @bot.event
 async def on_member_remove(member):
 	if (not is_registred(member)):
-		memberChannel = discord.utils.get(questionnairesCategory.text_channels, name = member.name)
+		memberChannel = discord.utils.get(formsCategory.text_channels, name = member.name)
 		await memberChannel.delete()
 	pass
 
 @bot.command()
 async def deleteQ(ctx):
-	for channel in questionnairesCategory.channels:
+	for channel in formsCategory.channels:
 		await channel.delete()
-	await questionnairesCategory.delete()
+	await formsCategory.delete()
+	pass
+
+@bot.command()
+async def giveRole(ctx):
+	insertIntoDB(ctx.message.author, registredUsersCollection)
+	registredUsers = registredUsersCollection.find()
 	pass
 
 def insertIntoDB(discordUser, collection):
@@ -76,7 +82,9 @@ def insertIntoDB(discordUser, collection):
 	return collection.insert_one(data)
 
 def is_registred(discordUser):
+	print(discordUser, registredUsers)
 	for user in registredUsers:
+		#print(str(discordUser.id) == str(user['discordID']), str(discordUser.id), str(user['discordID']))
 		if (str(discordUser.id) == str(user['discordID'])):
 			return True
 	return False
@@ -84,8 +92,8 @@ def is_registred(discordUser):
 async def add_to_server(discordUser):
 	#inserting into DB, add to whitelist on two servers, change role, nick and delete memberChannel
 	insertIntoDB(discordUser)
-	lampartyCreativeResponce = await rcon(f'whitelist add {discordUser.nick}', host='135.181.126.191', port=25658, passwd='bF52JuRi')
-	lampartyResonce = await rcon(f'whitelist add {discordUser.nick}', host='95.216.92.76', port=25861, passwd='1O4CnTkm')
+	#lampartyCreativeResponce = await rcon(f'whitelist add {discordUser.nick}', host='135.181.126.191', port=25658, passwd='bF52JuRi')
+	#lampartyResonce = await rcon(f'whitelist add {discordUser.nick}', host='95.216.92.76', port=25861, passwd='1O4CnTkm')
 
 
 bot.run('ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI' )

@@ -9,7 +9,6 @@ from discord.utils import get
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="!",intents=intents)
-logging = True
 
 #connection to db
 mongoClient = pymongo.MongoClient("localhost", 27017)
@@ -19,7 +18,8 @@ registredUsersCollection = lampartyDB.registred_users
 registredUsers = registredUsersCollection.find()
 
 #phrases
-helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку. Нажмите на реакцию ниже для того, чтобы начать."
+helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку."
+reactionPhrase =  "Нажмите на реакцию ниже для того, чтобы начать."
 
 questions = [
 	"Ваш ник Minecraft."
@@ -54,7 +54,6 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-	if logging: print(f"{member} just join server.")
 	if (is_registred(member)):
 		await member.add_roles(playerRole)
 	else:
@@ -63,43 +62,48 @@ async def on_member_join(member):
 
 		await memberChannel.set_permissions(member, read_messages = True)
 		await memberChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
-		helloMessage = await memberChannel.send(helloPhrase)
-		await helloMessage.add_reaction("\N{Llama}")
-		#await form(memberChannel)
-		#await bot.wait_for("reaction_add")
-		await startingForm(memberChannel)
-		print("ready")
-		await form(memberChannel)
+		
+		await waitReactionOnPhrase(memberChannel, helloPhrase)
+		finishedForm = False
+		while (not finishedForm):
+			await form(memberChannel)
+		#sendAllAnswers()
 	pass
 
-async def form(ctx):
+async def form(channel):
 	
-	await ctx.send(questions[0])
+	await channel.send(questions[0])
 	
 	def check(m):
-		return m.author.name == ctx.name and m.guild
+		return m.author.name == channel.name and m.guild
 	for questionID in range(1, len(questions)):
 		try:
 			msg = await bot.wait_for('message', timeout = 120.0, check = check)
 		except asyncio.TimeoutError:
-			return print("stopped")
+			await waitReactionOnPhrase(channel, "Повторить")
+			return
 		else:
-			await ctx.send(questions[questionID])
-	await ctx.send("end")
+			await channel.send(questions[questionID])
+	pass
+
+async def waitReactionOnPhrase(channel, phrase):
+	message = await channel.send(phrase)
+	await message.add_reaction("\N{Llama}")
+	def check(reaction, user):
+		return user.name == channel.name and reaction.message.content == message.content and reaction.emoji == "\N{Llama}"
+	reaction, user = await bot.wait_for("reaction_add", check = check)
 	pass
 
 async def startingForm(channel):
 	def check(reaction, user):
-		return user.name == channel.name and reaction.message.content == helloPhrase
+		return user.name == channel.name and reaction.message.content == helloPhrase and reaction.emoji == "\N{Llama}"
 	reaction, user = await bot.wait_for("reaction_add", check = check)
 	pass
-
 @bot.event
 async def on_member_remove(member):
 	if (not is_registred(member)):
 		memberChannel = discord.utils.get(formsCategory.text_channels, name = member.name)
 		await memberChannel.delete()
-	if logging: print(f"{member} just leave server.")
 	pass
 
 @bot.command()
@@ -109,10 +113,10 @@ async def delForms(ctx):
 	await formsCategory.delete()
 	pass
 
-@bot.command()
-async def giveRole(ctx):
-	insertIntoDB(ctx.message.author, registredUsersCollection)
-	pass
+# @bot.command()
+# async def giveRole(ctx):
+# 	insertIntoDB(ctx.message.author, registredUsersCollection)
+# 	pass
 
 def insertIntoDB(discordUser, collection):
 	data = {
@@ -125,9 +129,7 @@ def is_registred(discordUser):
 	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
 		if (discordUser.id == user["discordID"]):
-			if logging: print(f"{discordUser} is registred")
 			return True
-	if logging: print(f"{discordUser} isn't registred")
 	return False
 
 async def add_to_server(discordUser):
@@ -135,6 +137,5 @@ async def add_to_server(discordUser):
 	insertIntoDB(discordUser)
 	#lampartyCreativeResponce = await rcon(f'whitelist add {discordUser.nick}', host='135.181.126.191', port=25658, passwd='bF52JuRi')
 	#lampartyResonce = await rcon(f'whitelist add {discordUser.nick}', host='95.216.92.76', port=25861, passwd='1O4CnTkm')
-
 
 bot.run("ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI")

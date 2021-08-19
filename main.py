@@ -57,48 +57,59 @@ async def on_member_join(member):
 	if (is_registred(member)):
 		await member.add_roles(playerRole)
 	else:
-		#creating memberChannel
-		memberChannel = await formsCategory.create_text_channel(member.name, sync_permissions=False)
-
-		await memberChannel.set_permissions(member, read_messages = True)
-		await memberChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
-		
-		await waitReactionOnPhrase(memberChannel, helloPhrase)
-		finishedForm = False
-		while (not finishedForm):
-			await form(memberChannel)
-		#sendAllAnswers()
+		await register(member)
 	pass
 
-async def form(channel):
+async def register(member):
+	async def form(channel):
+		def check(m):
+			return m.author.name == channel.name and m.guild
+
+		await channel.send(questions[0])	
+		for questionID in range(1, len(questions)):
+			try:
+				msg = await bot.wait_for('message', timeout = 120.0, check = check)
+			except asyncio.TimeoutError:
+				await waitReactionOnPhrase(channel, "Повторить")
+				await clearForm(channel)
+				return False
+			else:
+				await channel.send(questions[questionID])
+		await bot.wait_for("message", timeout = 120.0, check=check)
+		await channel.set_permissions(lampartyGuild.default_role, send_messages = False)
+		return True
 	
-	await channel.send(questions[0])
+	async def waitReactionOnPhrase(channel, phrase):
+		message = await channel.send(phrase)
+		await message.add_reaction("\N{Llama}")
+
+		def check(reaction, user):
+			return (user.name == channel.name) and (reaction.emoji == "\N{Llama}") and (message.content == phrase)
+
+		reaction, user = await bot.wait_for("reaction_add", check = check)
+		pass
 	
-	def check(m):
-		return m.author.name == channel.name and m.guild
-	for questionID in range(1, len(questions)):
-		try:
-			msg = await bot.wait_for('message', timeout = 120.0, check = check)
-		except asyncio.TimeoutError:
-			await waitReactionOnPhrase(channel, "Повторить")
-			return
-		else:
-			await channel.send(questions[questionID])
+	async def clearForm(channel):
+		messages = channel.history()
+		async for message in messages:
+			if (not message.content == helloPhrase):
+				await message.delete()
+		pass
+	
+	#creating memberChannel
+	memberChannel = await formsCategory.create_text_channel(member.name, sync_permissions=False)
+
+	await memberChannel.set_permissions(member, read_messages = True)
+	await memberChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
+	await memberChannel.send(helloPhrase)
+
+	await waitReactionOnPhrase(memberChannel, reactionPhrase)
+	finishedForm = False
+	while (not finishedForm):
+		finishedForm = await form(memberChannel)
+	#sendAllAnswers()
 	pass
 
-async def waitReactionOnPhrase(channel, phrase):
-	message = await channel.send(phrase)
-	await message.add_reaction("\N{Llama}")
-	def check(reaction, user):
-		return user.name == channel.name and reaction.message.content == message.content and reaction.emoji == "\N{Llama}"
-	reaction, user = await bot.wait_for("reaction_add", check = check)
-	pass
-
-async def startingForm(channel):
-	def check(reaction, user):
-		return user.name == channel.name and reaction.message.content == helloPhrase and reaction.emoji == "\N{Llama}"
-	reaction, user = await bot.wait_for("reaction_add", check = check)
-	pass
 @bot.event
 async def on_member_remove(member):
 	if (not is_registred(member)):

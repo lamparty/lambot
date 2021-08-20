@@ -30,6 +30,7 @@ questions = [
 	, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
 	, "Ознакомились ли вы с правилами сервера?"
 	, "Кого нужно брать с собой на вечеринку?"
+	, "Спасибо за заполнение анкеты"
 ]
 
 @bot.event
@@ -61,40 +62,6 @@ async def on_member_join(member):
 	pass
 
 async def register(member):
-	async def form(channel):
-		def check(m):
-			return m.author.name == channel.name and m.guild
-
-		await channel.send(questions[0])	
-		for questionID in range(1, len(questions)):
-			try:
-				msg = await bot.wait_for('message', timeout = 120.0, check = check)
-			except asyncio.TimeoutError:
-				await waitReactionOnPhrase(channel, "Повторить")
-				await clearForm(channel)
-				return False
-			else:
-				await channel.send(questions[questionID])
-		await bot.wait_for("message", timeout = 120.0, check=check)
-		await channel.set_permissions(lampartyGuild.default_role, send_messages = False)
-		return True
-	
-	async def waitReactionOnPhrase(channel, phrase):
-		message = await channel.send(phrase)
-		await message.add_reaction("\N{Llama}")
-
-		def check(reaction, user):
-			return (user.name == channel.name) and (reaction.emoji == "\N{Llama}") and (message.content == phrase)
-
-		reaction, user = await bot.wait_for("reaction_add", check = check)
-		pass
-	
-	async def clearForm(channel):
-		messages = channel.history()
-		async for message in messages:
-			if (not message.content == helloPhrase):
-				await message.delete()
-		pass
 	
 	#creating memberChannel
 	memberChannel = await formsCategory.create_text_channel(member.name, sync_permissions=False)
@@ -104,9 +71,7 @@ async def register(member):
 	await memberChannel.send(helloPhrase)
 
 	await waitReactionOnPhrase(memberChannel, reactionPhrase)
-	finishedForm = False
-	while (not finishedForm):
-		finishedForm = await form(memberChannel)
+	await form(memberChannel)
 	#sendAllAnswers()
 	pass
 
@@ -148,5 +113,50 @@ async def add_to_server(discordUser):
 	insertIntoDB(discordUser)
 	#lampartyCreativeResponce = await rcon(f'whitelist add {discordUser.nick}', host='135.181.126.191', port=25658, passwd='bF52JuRi')
 	#lampartyResonce = await rcon(f'whitelist add {discordUser.nick}', host='95.216.92.76', port=25861, passwd='1O4CnTkm')
+
+async def clearForm(channel):
+	messages = channel.history()
+	async for message in messages:
+		if (not message.content == helloPhrase):
+			await message.delete()
+	pass
+
+async def waitReactionOnPhrase(channel, phrase):
+	message = await channel.send(phrase)
+	await message.add_reaction("\N{Llama}")
+
+	def llamaEmojiCheck(reaction, user):
+		return (user.name == channel.name) and (reaction.emoji == "\N{Llama}") and (message.content == phrase)
+
+	reaction, user = await bot.wait_for("reaction_add", check = llamaEmojiCheck)
+	pass
+
+async def form(channel):
+	def memberChannelCheck(m):
+		return m.author.name == channel.name and m.guild
+	
+	await channel.set_permissions(lampartyGuild.default_role, send_messages = True)
+	
+	formFinished = False
+	
+	while (not formFinished):
+		print("start cycle")
+		await channel.send(questions[0])	
+		for questionID in range(1, len(questions)):
+			try:
+				msg = await bot.wait_for('message', timeout = 20.0, check = memberChannelCheck)
+			except asyncio.TimeoutError:
+				await waitReactionOnPhrase(channel, "Повторить")
+				print("jgak;waf")
+				await clearForm(channel)
+				break
+			else:
+				await channel.send(questions[questionID])
+				if (questionID == len(questions) - 1):
+					formFinished = True
+
+		#await bot.wait_for("message", timeout = 120.0, check=check)
+		
+	await channel.set_permissions(lampartyGuild.default_role, send_messages = False)
 
 bot.run("ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI")

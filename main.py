@@ -1,6 +1,7 @@
 import discord
 import pymongo
 import asyncio
+import time
 from rcon import rcon
 from discord.ext import commands
 from discord.utils import get
@@ -35,15 +36,22 @@ questions = [
 
 @bot.event
 async def on_ready():
+	def findFormCategory(guild):
+		return discord.utils.get(guild.categories, name = "Анкеты")
+
 	#getting guild and player role
 	global lampartyGuild
 	lampartyGuild = bot.get_guild(727245965345685514)
 	global playerRole
 	playerRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
-
+	
+	
 	#create categoryChannel for guests only
 	global formsCategory
-	formsCategory = await lampartyGuild.create_category('Анкеты')
+	if findFormCategory(lampartyGuild):
+		formsCategory = findFormCategory(lampartyGuild)
+	else:
+		formsCategory = await lampartyGuild.create_category('Анкеты')
 
 	await formsCategory.set_permissions(playerRole, read_messages = False)
 	await formsCategory.set_permissions(bot.user, read_messages = True)
@@ -94,6 +102,12 @@ async def delForms(ctx):
 # 	insertIntoDB(ctx.message.author, registredUsersCollection)
 # 	pass
 
+@bot.command()
+async def clear(ctx):
+	print(ctx.message.channel)
+	#clearForm(ctx.message.channel)
+	pass
+
 def insertIntoDB(discordUser, collection):
 	data = {
 		'discordID': discordUser.id
@@ -117,8 +131,8 @@ async def add_to_server(discordUser):
 async def clearForm(channel):
 	messages = channel.history()
 	async for message in messages:
-		if (not message.content == helloPhrase):
-			await message.delete()
+		#if (not message.content == helloPhrase):
+		await message.delete()
 	pass
 
 async def waitReactionOnPhrase(channel, phrase):
@@ -137,10 +151,10 @@ async def form(channel):
 	
 	await channel.set_permissions(lampartyGuild.default_role, send_messages = True)
 	
+	time.sleep(10)
 	formFinished = False
 	
 	while (not formFinished):
-		print("start cycle")
 		await channel.send(questions[0])	
 		for questionID in range(1, len(questions)):
 			try:
@@ -151,6 +165,7 @@ async def form(channel):
 				await clearForm(channel)
 				break
 			else:
+				#check about cancel function
 				await channel.send(questions[questionID])
 				if (questionID == len(questions) - 1):
 					formFinished = True

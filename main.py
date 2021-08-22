@@ -21,6 +21,8 @@ registredUsers = registredUsersCollection.find()
 #phrases
 helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку."
 reactionPhrase =  "Нажмите на реакцию ниже для того, чтобы начать."
+cancelPhrase = "Чтобы начать заполнять анкету заново напишите \"отмена\""
+retryPhrase = "Время для ответа на вопрос закончилось. Для повторного заполнения анкеты нажмите на реакцию ниже."
 
 questions = [
 	"Ваш ник Minecraft."
@@ -91,67 +93,68 @@ async def on_member_join(member):
 
 @bot.event
 async def on_reaction_add(reaction, user):
-	#print(reaction, user)
 	if (reaction.emoji == "\N{Llama}") and (reaction.message.channel.category == formsCategory) and (not user.bot) and (reaction.message.content == reactionPhrase):
-		await reaction.message.remove_reaction("\N{Llama}", bot.user)
 		await reaction.message.delete()
+		await register(user)
+	if (reaction.emoji == "\N{Llama}") and (reaction.message.channel.category == formsCategory) and (not user.bot) and (reaction.message.content == questions[len(questions) - 1]):
+		await reaction.message.clear_reactions()
 		await register(user)
 	pass
 
 async def register(member):
 	async def clearForm(channel):
+		await channel.set_permissions(member, send_messages = False, read_messages = True)
+		
 		async for message in channel.history():
-			if (not message.content == helloPhrase):
-				await message.delete()
+			if (message.content == cancelPhrase): 
+				await channel.set_permissions(member, send_messages = True, read_messages = True)
+				return True
+			else: await message.delete()
+		pass
+	
+	async def waitReactionOnPhrase(channel, phrase):
+		message = await channel.send(phrase)
+		await message.add_reaction("\N{Llama}")
+
+		def llamaEmojiCheck(reaction, user):
+			return (user in reaction.message.channel.members) and (reaction.emoji == "\N{Llama}") and (message.content == phrase) and (not user.bot)
+
+		reaction, user = await bot.wait_for("reaction_add", check = llamaEmojiCheck)
 		pass
 	
 	async def form(channel):
 		def memberChannelCheck(m):
-			print(m.channel in formsCategory.channels)
-			#change check
 			return (m.channel in formsCategory.channels) and (not m.author.bot)
-		async def deleteReactionFromPrevMessage(channel):
-			async for message in channel.history():
-				if message.author.bot:
-					return await message.clear_reaction("\N{Llama}")
-
+		
 		#asking questions
 		botMessage = await channel.send(questions[0])
-		await botMessage.add_reaction("\N{Llama}")
 		await memberChannel.set_permissions(member, send_messages = True, read_messages = True)
+		
 		for questionID in range(1, len(questions)):
 			try:
-				userMessage = await bot.wait_for('message', timeout = 120.0, check = memberChannelCheck)
+				userMessage = await bot.wait_for('message', timeout = 10.0, check = memberChannelCheck)
 			except asyncio.TimeoutError:
 				await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
-				await deleteReactionFromPrevMessage(channel)
-				await waitReactionOnPhrase(channel, "Время для ответа на вопрос закончилось. Для заполнения анкеты нажмите на реакцию ниже.")
-				#await clearForm(channel)
+				await waitReactionOnPhrase(channel, retryPhrase)
+				await clearForm(channel)
 				return False
 			else:
-				await deleteReactionFromPrevMessage(channel)
+				if (userMessage.content.lower().replace(" ", "") == "отмена"):
+					await clearForm(channel)
+					return False
 				botMessage = await channel.send(questions[questionID])
-				await botMessage.add_reaction("\N{Llama}")
 				if (questionID == len(questions) - 1):
+					await botMessage.add_reaction("\N{Llama}")
 					return True
-
+	
 	registred = False
 	memberChannel = discord.utils.find(lambda c: member in c.members, formsCategory.channels)
+	await memberChannel.send(cancelPhrase)
 	
 	while not registred:
 		registred = await form(memberChannel)
 	
 	await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
-	pass
-
-async def waitReactionOnPhrase(channel, phrase):
-	message = await channel.send(phrase)
-	await message.add_reaction("\N{Llama}")
-
-	def llamaEmojiCheck(reaction, user):
-		return (user in reaction.message.channel.members) and (reaction.emoji == "\N{Llama}") and (message.content == phrase) and (not user.bot)
-
-	reaction, user = await bot.wait_for("reaction_add", check = llamaEmojiCheck)
 	pass
 
 async def createMemberChannel(member):

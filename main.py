@@ -22,25 +22,23 @@ registredUsers = registredUsersCollection.find()
 helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку."
 reactionPhrase =  "Нажмите на реакцию ниже для того, чтобы начать."
 cancelPhrase = "Чтобы начать заполнять анкету заново напишите \"отмена\""
-retryPhrase = "Время для ответа на вопрос закончилось. Для повторного заполнения анкеты нажмите на реакцию ниже."
-
+timeoutPhrase = "Время для ответа на вопрос закончилось. Для повторного заполнения анкеты нажмите на реакцию ниже."
+endPhrase = "Ваша анкета отправлена на рассмотрение. Анкеты рассматриваются до 12 часов с момента подачи."
+retryPhrase = "Чтобы заполнить анкету повторно, нажмите на реакцию ниже."
 questions = [
 	"Ваш ник Minecraft."
 	,"Сколько вам лет?"
-	, "Как вы нашли наш сервер?"
-	, "Чем планируете заниматься на сервере?"
-	, "Как давно вы играете в Minecraft?"
-	, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
-	, "Ознакомились ли вы с правилами сервера?"
-	, "Кого нужно брать с собой на вечеринку?"
-	, "Ваша анкета отправлена на рассмотрение. Анкеты рассматриваются до 12 часов с момента подачи."
+	#, "Как вы нашли наш сервер?"
+	#, "Чем планируете заниматься на сервере?"
+	#, "Как давно вы играете в Minecraft?"
+	#, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
+	#, "Ознакомились ли вы с правилами сервера?"
+	#, "Кого нужно брать с собой на вечеринку?"
+
 ]
 
 @bot.event
 async def on_ready():
-	def findFormCategory(guild):
-		return discord.utils.get(guild.categories, name = "Анкеты")
-
 	def getAllGuest(guild):
 		guests = []
 		for user in guild.members:
@@ -56,26 +54,39 @@ async def on_ready():
 		pass
 	
 	async def createFormCategory():
+		def findFormCategory(guild):
+			return discord.utils.get(guild.categories, name = "Анкеты")
+
 		global formsCategory
-		
 		if findFormCategory(lampartyGuild):
-			#delete if exist
 			formsCategory = findFormCategory(lampartyGuild)
 			for channel in formsCategory.channels:
-				await channel.delete()
-			await formsCategory.delete()
-		
-		formsCategory = await lampartyGuild.create_category('Анкеты')
-		
+				if (not channel.name == "все-анкеты"):
+					await channel.delete()
+			#await formsCategory.delete()
+		else:
+			formsCategory = await lampartyGuild.create_category('Анкеты')
+
 		await formsCategory.set_permissions(playerRole, read_messages = False)
 		await formsCategory.set_permissions(bot.user, read_messages = True)
 		await formsCategory.set_permissions(lampartyGuild.default_role, read_messages = True)
-		
+		pass
+	
+	async def createAllFormsChannel(category):
+		def findAllFormsChannel(category):
+			return discord.utils.get(category.channels, name = "все-анкеты")
+		global allFormsChannel
+		if (findAllFormsChannel(category)):
+			allFormsChannel = findAllFormsChannel(category)
+		else:
+			allFormsChannel = await category.create_text_channel("все-анкеты")
+		await allFormsChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
 		pass
 	
 	getGuildAndRole()
 	await createFormCategory()
-	
+	await createAllFormsChannel(formsCategory)
+
 	guests = getAllGuest(lampartyGuild)
 	for user in guests:
 		channel = await createMemberChannel(user)
@@ -87,21 +98,46 @@ async def on_member_join(member):
 	if (is_registred(member)):
 		await member.add_roles(playerRole)
 	else:
-		#creating memberChannel
 		await createMemberChannel(member)
 	pass
 
 @bot.event
 async def on_reaction_add(reaction, user):
-	if (reaction.emoji == "\N{Llama}") and (reaction.message.channel.category == formsCategory) and (not user.bot) and (reaction.message.content == reactionPhrase):
-		await reaction.message.delete()
-		await register(user)
-	if (reaction.emoji == "\N{Llama}") and (reaction.message.channel.category == formsCategory) and (not user.bot) and (reaction.message.content == questions[len(questions) - 1]):
-		await reaction.message.clear_reactions()
-		await register(user)
+	if (reaction.message.channel.category == formsCategory) and (not user.bot):
+		if (reaction.emoji == "\N{Llama}") and (reaction.message.content in [reactionPhrase, retryPhrase]):
+			await reaction.message.delete()
+			await register(user)
+			pass
+		if (reaction.emoji == "✔"):
+			#addToServer
+			#"add role, delete channel, add to db, add to whitelist"
+			async def addToServer():
+				form = reaction.message.content[reaction.message.content.find("```") + 4:reaction.message.content.rfind("```")].split("\n")
+				print(form)
+			await addToServer()
+		elif (reaction.emoji == "❌"):
+			#"send denied"
+			pass
+		elif (reaction.emoji == "✏"):
+			#changeNickFromForm
+			#"send user message for change nick"
+			pass
 	pass
 
 async def register(member):
+	async def getForm(channel):
+		memberForm = []
+		async for message in channel.history():
+			if (message.content == cancelPhrase):
+				memberForm.reverse()
+				for answerID in range(len(memberForm)):
+					memberForm[answerID] = f'"{questions[answerID]}": {memberForm[answerID]}'
+					pass
+				return "\n".join(memberForm)
+			else:
+				if (not message.author.bot):
+					memberForm.append(message.content)
+	
 	async def clearForm(channel):
 		await channel.set_permissions(member, send_messages = False, read_messages = True)
 		
@@ -126,26 +162,28 @@ async def register(member):
 		def memberChannelCheck(m):
 			return (m.channel in formsCategory.channels) and (not m.author.bot)
 		
-		#asking questions
-		botMessage = await channel.send(questions[0])
 		await memberChannel.set_permissions(member, send_messages = True, read_messages = True)
 		
-		for questionID in range(1, len(questions)):
+		for question in questions:
 			try:
-				userMessage = await bot.wait_for('message', timeout = 10.0, check = memberChannelCheck)
+				if (not question == questions[0]):
+					userMessage = await bot.wait_for('message', timeout = 120.0, check = memberChannelCheck)
 			except asyncio.TimeoutError:
 				await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
-				await waitReactionOnPhrase(channel, retryPhrase)
+				await waitReactionOnPhrase(channel, timeoutPhrase)
 				await clearForm(channel)
 				return False
 			else:
-				if (userMessage.content.lower().replace(" ", "") == "отмена"):
-					await clearForm(channel)
-					return False
-				botMessage = await channel.send(questions[questionID])
-				if (questionID == len(questions) - 1):
-					await botMessage.add_reaction("\N{Llama}")
-					return True
+				if (not question == questions[0]):
+					if (userMessage.content.lower().replace(" ", "").replace("*", "").replace("_", "").replace("~", "").replace("`", "") == "отмена"):
+						await clearForm(channel)
+						return False
+				botMessage = await channel.send(question)
+		userMessage = await bot.wait_for('message', timeout = 120.0, check = memberChannelCheck)
+		await channel.send(endPhrase)
+		botMessage = await channel.send(retryPhrase)
+		await botMessage.add_reaction("\N{Llama}")
+		return True
 	
 	registred = False
 	memberChannel = discord.utils.find(lambda c: member in c.members, formsCategory.channels)
@@ -153,7 +191,12 @@ async def register(member):
 	
 	while not registred:
 		registred = await form(memberChannel)
-	
+
+	competedForm = await allFormsChannel.send(f"{member.mention}```\n{await getForm(memberChannel)}```")
+	await competedForm.add_reaction("✔")
+	await competedForm.add_reaction("❌")
+	await competedForm.add_reaction("✏")
+
 	await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
 	pass
 

@@ -1,7 +1,7 @@
 import discord
 import pymongo
 import asyncio
-import time
+import requests
 from rcon import rcon
 from discord.ext import commands
 from discord.utils import get
@@ -95,7 +95,15 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	if (is_registred(member)):
+		async def setMinecraftNick():
+			mojangUUID = is_registred(member)["mojangUUID"]
+			nicks = requests.get(
+				f"https://api.mojang.com/user/profiles/{mojangUUID}/names").json()
+			minecraftNick = nicks[len(nicks) - 1]["name"]
+			await member.edit(nick = minecraftNick)
+
 		await member.add_roles(playerRole)
+		await setMinecraftNick()
 	else:
 		await createMemberChannel(member)
 	pass
@@ -186,18 +194,44 @@ async def on_reaction_add(reaction, user):
 		if (reaction.emoji == "✔"):
 			#addToServer
 			#"add role, delete channel, add to db, add to whitelist"
-			async def addToServer(formMessage):
-				def parseForm():
+			async def addOnServer(formMessage):
+				async def parseForm():
+					userFormChannelID = formMessage.content[formMessage.content.find("#") + 1:formMessage.content.find(":") - 1]
+					userFormChannel = lampartyGuild.get_channel(int(userFormChannelID))
+					print(userFormChannelID, userFormChannel)
+
 					userDiscordID = formMessage.content[formMessage.content.find("@") + 1:formMessage.content.find(">")]
-					user = bot.get_user(int(userDiscordID))
+					user = lampartyGuild.get_member(int(userDiscordID))
 
 					form = formMessage.content[formMessage.content.find("```") + 4:formMessage.content.rfind("```")].split("\n")
 					nick = form[0] = form[0][form[0].find('"') + 1:]
 					nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
 					
-					return user, nick
-				discordUser, minecraftNick = parseForm()
-			await addToServer(reaction.message)
+					return user, userFormChannel, userDiscordID, nick 			
+				async def insertIntoDB(discordUserID, minecraftUUID, collection):
+					data = {
+						"discordID": discordUserID,
+						"mojangUUID": minecraftUUID
+					}
+					global registredUsers
+					registredUsers = registredUsersCollection.find()
+					return collection.insert_one(data)	
+				async def getMojangUUID(minecraftNick):  # using with "import requests" | put inside user class
+					mojangUUID = requests.get(
+						f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
+					return mojangUUID
+
+				discordUser, discordUserFormChannel, discordUserID, minecraftNick = await parseForm()
+
+				if discordUser:
+					await discordUser.add_roles(playerRole)
+					await discordUser.edit(nick = minecraftNick)
+				
+				if discordUserFormChannel:
+					await discordUserFormChannel.delete()
+				await insertIntoDB(discordUserID, await getMojangUUID(minecraftNick), registredUsersCollection)
+
+			await addOnServer(reaction.message)
 		elif (reaction.emoji == "❌"):
 			#"send denied"
 			pass
@@ -218,8 +252,8 @@ def is_registred(discordUser):
 	global registredUsers
 	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
-		if (discordUser.id == user["discordID"]):
-			return True
+		if (str(discordUser.id) == user["discordID"]):
+			return user
 	return False
 
 async def createMemberChannel(member):

@@ -24,10 +24,10 @@ class rconConnection():
 		self.host = host
 		self.port = port
 		self.passwd = passwd
-	async def executeCommand(command):
+	async def executeCommand(self, command):
 		await rcon(command, host = self.host, port= self.port, passwd= self.passwd)
-lamparty = rconConnection("135.181.126.191", 25658, "bF52JuRi")
-lampartyCreatiove = rconConnection("95.216.92.76", 25861, "1O4CnTkm")
+lamparty = rconConnection("95.216.92.76", 25861, "1O4CnTkm")
+lampartyCreative = rconConnection("135.181.126.191", 25658, "bF52JuRi")
 
 #phrases
 helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку."
@@ -85,6 +85,7 @@ async def on_ready():
 	async def createAllFormsChannel(category):
 		def findAllFormsChannel(category):
 			return discord.utils.get(category.channels, name = "все-анкеты")
+		
 		global allFormsChannel
 		if (findAllFormsChannel(category)):
 			allFormsChannel = findAllFormsChannel(category)
@@ -146,11 +147,11 @@ async def on_reaction_add(reaction, user):
 			pass
 		
 		async def waitReactionOnPhrase(channel, phrase):
-			message = await channel.send(phrase)
-			await message.add_reaction("\N{Llama}")
-
 			def llamaEmojiCheck(reaction, user):
 				return (user in reaction.message.channel.members) and (reaction.emoji == "\N{Llama}") and (message.content == phrase) and (not user.bot)
+
+			message = await channel.send(phrase)
+			await message.add_reaction("\N{Llama}")
 
 			reaction, user = await bot.wait_for("reaction_add", check = llamaEmojiCheck)
 			pass
@@ -219,6 +220,7 @@ async def on_reaction_add(reaction, user):
 					nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
 					
 					return user, userFormChannel, userDiscordID, nick 			
+				
 				async def insertIntoDB(discordUserID, minecraftUUID, collection):
 					data = {
 						"discordID": discordUserID,
@@ -227,6 +229,7 @@ async def on_reaction_add(reaction, user):
 					global registredUsers
 					registredUsers = registredUsersCollection.find()
 					return collection.insert_one(data)	
+				
 				async def getMojangUUID(minecraftNick):  # using with "import requests" | put inside user class
 					mojangUUID = requests.get(
 						f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
@@ -241,6 +244,9 @@ async def on_reaction_add(reaction, user):
 				if discordUserFormChannel:
 					await discordUserFormChannel.delete()
 				await insertIntoDB(discordUserID, await getMojangUUID(minecraftNick), registredUsersCollection)
+
+				#await lamparty.executeCommand(f"whitelist add {minecraftNick}")
+				#await lampartyCreative.executeCommand(f"say whitelist add {minecraftNick}")
 
 			await addOnServer(reaction.message)
 		elif (reaction.emoji == "❌"):

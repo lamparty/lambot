@@ -27,7 +27,7 @@ endPhrase = "Ваша анкета отправлена на рассмотре�
 retryPhrase = "Чтобы заполнить анкету повторно, нажмите на реакцию ниже."
 questions = [
 	"Ваш ник Minecraft."
-	,"Сколько вам лет?"
+	#,"Сколько вам лет?"
 	#, "Как вы нашли наш сервер?"
 	#, "Чем планируете заниматься на сервере?"
 	#, "Как давно вы играете в Minecraft?"
@@ -81,7 +81,7 @@ async def on_ready():
 			allFormsChannel = await category.create_text_channel("все-анкеты")
 		await allFormsChannel.set_permissions(lampartyGuild.default_role, read_messages = False)
 		pass
-	
+
 	getGuildAndRole()
 	await createFormCategory()
 	await createAllFormsChannel(formsCategory)
@@ -186,11 +186,18 @@ async def on_reaction_add(reaction, user):
 		if (reaction.emoji == "✔"):
 			#addToServer
 			#"add role, delete channel, add to db, add to whitelist"
-			async def addToServer():
-				def parse(Form):
-					form = reaction.message.content[reaction.message.content.find("```") + 4:reaction.message.content.rfind("```")].split("\n")
-				print(form)
-			await addToServer()
+			async def addToServer(formMessage):
+				def parseForm():
+					userDiscordID = formMessage.content[formMessage.content.find("@") + 1:formMessage.content.find(">")]
+					user = bot.get_user(int(userDiscordID))
+
+					form = formMessage.content[formMessage.content.find("```") + 4:formMessage.content.rfind("```")].split("\n")
+					nick = form[0] = form[0][form[0].find('"') + 1:]
+					nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
+					
+					return user, nick
+				discordUser, minecraftNick = parseForm()
+			await addToServer(reaction.message)
 		elif (reaction.emoji == "❌"):
 			#"send denied"
 			pass

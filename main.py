@@ -18,6 +18,17 @@ registredUsersCollection = lampartyDB.registred_users
 
 registredUsers = registredUsersCollection.find()
 
+#rcon
+class rconConnection():
+	def __init__(self, host, port, passwd):
+		self.host = host
+		self.port = port
+		self.passwd = passwd
+	async def executeCommand(command):
+		await rcon(command, host = self.host, port= self.port, passwd= self.passwd)
+lamparty = rconConnection("135.181.126.191", 25658, "bF52JuRi")
+lampartyCreatiove = rconConnection("95.216.92.76", 25861, "1O4CnTkm")
+
 #phrases
 helloPhrase = "Здравствуйсте, для игры на данном проекте необходимо заполнить заявку."
 reactionPhrase =  "Нажмите на реакцию ниже для того, чтобы начать."

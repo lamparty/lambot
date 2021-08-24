@@ -37,6 +37,7 @@ timeoutPhrase = "Время для ответа на вопрос закончи
 endPhrase = "Ваша анкета отправлена на рассмотрение. Анкеты рассматриваются до 12 часов с момента подачи."
 retryPhrase = "Чтобы заполнить анкету повторно, нажмите на реакцию ниже."
 addedOnServerPhrase = "Вы добавлены на сервер, приятной игры!"
+sendFormError = "При отправке анкеты произошла ошибка. Заполните анкету повторно."
 questions = [
 	"Ваш ник Minecraft."
 	,"Сколько вам лет?"
@@ -129,7 +130,11 @@ async def on_reaction_add(reaction, user):
 				if (message.content == cancelPhrase):
 					memberForm.reverse()
 					for answerID in range(len(memberForm)):
-						memberForm[answerID] = f'"{questions[answerID]}": {memberForm[answerID]}'
+						try:
+							memberForm[answerID] = f'"{questions[answerID]}": {memberForm[answerID]}'
+						except IndexError:
+							await channel.send(sendFormError)
+							return
 						pass
 					return "\n".join(memberForm)
 				else:
@@ -185,17 +190,19 @@ async def on_reaction_add(reaction, user):
 		
 		registred = False
 		memberChannel = discord.utils.find(lambda c: member in c.members, formsCategory.channels)
-		await memberChannel.send(cancelPhrase)
-		
-		while not registred:
-			registred = await form(memberChannel)
+		if (memberChannel):
+			await memberChannel.send(cancelPhrase)
+			
+			while not registred:
+				registred = await form(memberChannel)
 
-		competedForm = await allFormsChannel.send(f"Анкета № number ({member.mention}) в канале {memberChannel.mention}:```\n{await getForm(memberChannel)}```")
-		await competedForm.add_reaction("✔")
-		await competedForm.add_reaction("❌")
-		await competedForm.add_reaction("✏")
-
-		await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
+			await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
+			
+			if (await getForm(memberChannel)):
+				competedForm = await allFormsChannel.send(f"Анкета № number ({member.mention}) в канале {memberChannel.mention}:```\n{await getForm(memberChannel)}```")
+				await competedForm.add_reaction("✔")
+				await competedForm.add_reaction("❌")
+				await competedForm.add_reaction("✏")
 		pass
 	
 	async def parseForm(formMessage):
@@ -257,7 +264,7 @@ async def on_reaction_add(reaction, user):
 		pass
 	
 	if (reaction.message.channel.category == formsCategory) and (not user.bot):
-		if (reaction.emoji == "\N{Llama}") and (reaction.message.content in [reactionPhrase, retryPhrase]):
+		if (reaction.emoji == "\N{Llama}") and (reaction.message.content in [reactionPhrase, retryPhrase] and not playerRole in user.roles):
 			await reaction.message.delete()
 			await register(user)
 			pass
@@ -296,5 +303,14 @@ async def createMemberChannel(member):
 	await message.add_reaction("\N{Llama}")
 	
 	return channel
+
+@bot.command()
+async def restartForm(ctx, mention):
+	if ctx.message.channel == allFormsChannel:
+		discordUserID = int(mention[mention.find("@") + 2: len(mention) - 1])
+		user = lampartyGuild.get_member(int(discordUserID))
+		channel = discord.utils.find(lambda channel: user in channel.members, formsCategory.channels)
+		await channel.delete()
+		await createMemberChannel(user)
 
 bot.run("ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI")

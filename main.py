@@ -36,16 +36,16 @@ cancelPhrase = "Чтобы начать заполнять анкету зано
 timeoutPhrase = "Время для ответа на вопрос закончилось. Для повторного заполнения анкеты нажмите на реакцию ниже."
 endPhrase = "Ваша анкета отправлена на рассмотрение. Анкеты рассматриваются до 12 часов с момента подачи."
 retryPhrase = "Чтобы заполнить анкету повторно, нажмите на реакцию ниже."
+addedOnServerPhrase = "Вы добавлены на сервер, приятной игры!"
 questions = [
 	"Ваш ник Minecraft."
-	#,"Сколько вам лет?"
-	#, "Как вы нашли наш сервер?"
-	#, "Чем планируете заниматься на сервере?"
-	#, "Как давно вы играете в Minecraft?"
-	#, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
-	#, "Ознакомились ли вы с правилами сервера?"
-	#, "Кого нужно брать с собой на вечеринку?"
-
+	,"Сколько вам лет?"
+	, "Как вы нашли наш сервер?"
+	, "Чем планируете заниматься на сервере?"
+	, "Как давно вы играете в Minecraft?"
+	, "Был ли у вас ранее опыт игры на подобных серверах? (Если да, то почему ушли?)"
+	, "Ознакомились ли вы с правилами сервера?"
+	, "Кого нужно брать с собой на вечеринку?"
 ]
 
 @bot.event
@@ -197,64 +197,77 @@ async def on_reaction_add(reaction, user):
 
 		await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
 		pass
+	
+	async def parseForm(formMessage):
+			userFormChannelID = formMessage.content[formMessage.content.find("#") + 1:formMessage.content.find(":") - 1]
+			userFormChannel = lampartyGuild.get_channel(int(userFormChannelID))
 
+			userDiscordID = formMessage.content[formMessage.content.find("@") + 1:formMessage.content.find(">")]
+			user = lampartyGuild.get_member(int(userDiscordID))
+			
+			if (reaction.emoji in ["✔", "❌"]):
+				form = formMessage.content[formMessage.content.find("```") + 4:formMessage.content.rfind("```")].split("\n")
+				nick = form[0] = form[0][form[0].find('"') + 1:]
+				nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
+			else:
+				def nickCheck(message):
+					return not message.author.bot
+				await allFormsChannel.send("Напишите ник, на который нужно заменить")
+				nickMessage = await bot.wait_for("message", check = nickCheck)
+				nick = nickMessage.content.replace(" ", "")
+			
+			return user, userFormChannel, userDiscordID, nick
+	
+	async def addOnServer(formMessage):
+		
+		async def insertIntoDB(discordUserID, minecraftUUID, collection):
+			data = {
+				"discordID": discordUserID,
+				"mojangUUID": minecraftUUID
+			}
+			registredUsers = registredUsersCollection.find()
+			return collection.insert_one(data)	
+		
+		async def getMojangUUID(minecraftNick):  # using with "import requests" | put inside user class
+			mojangUUID = requests.get(
+				f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
+			return mojangUUID
+
+		discordUser, discordUserFormChannel, discordUserID, minecraftNick = await parseForm(formMessage)
+		if not is_registred(discordUser):
+			if discordUser:
+				await discordUser.add_roles(playerRole)
+				await discordUser.edit(nick = minecraftNick)
+				await discordUser.send(addedOnServerPhrase)
+
+			if discordUserFormChannel:
+				await discordUserFormChannel.delete()
+			await insertIntoDB(discordUserID, await getMojangUUID(minecraftNick), registredUsersCollection)
+
+			#await lamparty.executeCommand(f"whitelist add {minecraftNick}")
+		pass
+
+	async def rejectForm(formMessage):
+		def reasonCheck(message):
+			return not message.author.bot
+		discordUser, discordUserFormChannel, discordUserID, minecraftNick = await parseForm(formMessage)
+		await allFormsChannel.send("Напишите причину отклонения анкеты")
+		reasonMessage = await bot.wait_for("message", check = reasonCheck)
+		await discordUser.send(f"Ваша анкета на сервер lamparty не подходит по причине: {reasonMessage.content}.\nВы также можете повторно заполнить анкету.")
+		pass
+	
 	if (reaction.message.channel.category == formsCategory) and (not user.bot):
 		if (reaction.emoji == "\N{Llama}") and (reaction.message.content in [reactionPhrase, retryPhrase]):
 			await reaction.message.delete()
 			await register(user)
 			pass
 		if (reaction.emoji == "✔"):
-			#addToServer
-			#"add role, delete channel, add to db, add to whitelist"
-			async def addOnServer(formMessage):
-				async def parseForm():
-					userFormChannelID = formMessage.content[formMessage.content.find("#") + 1:formMessage.content.find(":") - 1]
-					userFormChannel = lampartyGuild.get_channel(int(userFormChannelID))
-					print(userFormChannelID, userFormChannel)
-
-					userDiscordID = formMessage.content[formMessage.content.find("@") + 1:formMessage.content.find(">")]
-					user = lampartyGuild.get_member(int(userDiscordID))
-
-					form = formMessage.content[formMessage.content.find("```") + 4:formMessage.content.rfind("```")].split("\n")
-					nick = form[0] = form[0][form[0].find('"') + 1:]
-					nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
-					
-					return user, userFormChannel, userDiscordID, nick 			
-				
-				async def insertIntoDB(discordUserID, minecraftUUID, collection):
-					data = {
-						"discordID": discordUserID,
-						"mojangUUID": minecraftUUID
-					}
-					global registredUsers
-					registredUsers = registredUsersCollection.find()
-					return collection.insert_one(data)	
-				
-				async def getMojangUUID(minecraftNick):  # using with "import requests" | put inside user class
-					mojangUUID = requests.get(
-						f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
-					return mojangUUID
-
-				discordUser, discordUserFormChannel, discordUserID, minecraftNick = await parseForm()
-
-				if discordUser:
-					await discordUser.add_roles(playerRole)
-					await discordUser.edit(nick = minecraftNick)
-				
-				if discordUserFormChannel:
-					await discordUserFormChannel.delete()
-				await insertIntoDB(discordUserID, await getMojangUUID(minecraftNick), registredUsersCollection)
-
-				#await lamparty.executeCommand(f"whitelist add {minecraftNick}")
-				#await lampartyCreative.executeCommand(f"say whitelist add {minecraftNick}")
-
 			await addOnServer(reaction.message)
 		elif (reaction.emoji == "❌"):
-			#"send denied"
+			await rejectForm(reaction.message)
 			pass
 		elif (reaction.emoji == "✏"):
-			#changeNickFromForm
-			#"send user message for change nick"
+			await addOnServer(reaction.message)
 			pass
 	pass
 
@@ -266,7 +279,6 @@ async def on_member_remove(member):
 	pass
 
 def is_registred(discordUser):
-	global registredUsers
 	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
 		if (str(discordUser.id) == user["discordID"]):

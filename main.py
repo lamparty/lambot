@@ -12,7 +12,7 @@ intents.members = True
 bot = commands.Bot(command_prefix="!",intents=intents)
 
 #connection to db
-mongoClient = pymongo.MongoClient("localhost", 27017)
+mongoClient = pymongo.MongoClient("mongodb://toombez:yTcrf;e@3.143.215.30:27017/?authSource=admin")
 lampartyDB = mongoClient.lamparty
 registredUsersCollection = lampartyDB.registred_users
 

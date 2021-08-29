@@ -60,7 +60,7 @@ async def on_ready():
 
 	def getGuildAndRole():
 		global lampartyGuild
-		lampartyGuild = bot.get_guild(880870316870615100)
+		lampartyGuild = bot.get_guild(866650124900892694)
 		global playerRole
 		playerRole = discord.utils.get(lampartyGuild.roles, name = 'Игрок') # change on 'игрок'
 		global adminRole
@@ -220,7 +220,7 @@ async def on_reaction_add(reaction, user):
 				nick = nick[form[0].find(':') + 2:].lower().replace(" ","")
 			else:
 				def nickCheck(message):
-					return not message.author.bot
+					return not message.author.bot and message.channel == allFormsChannel
 				await allFormsChannel.send("Напишите ник, на который нужно заменить")
 				nickMessage = await bot.wait_for("message", check = nickCheck)
 				nick = nickMessage.content.replace(" ", "")
@@ -258,7 +258,7 @@ async def on_reaction_add(reaction, user):
 
 	async def rejectForm(formMessage):
 		def reasonCheck(message):
-			return not message.author.bot
+			return not message.author.bot and message.channel == allFormsChannel
 		discordUser, discordUserFormChannel, discordUserID, minecraftNick = await parseForm(formMessage)
 		await allFormsChannel.send("Напишите причину отклонения анкеты")
 		reasonMessage = await bot.wait_for("message", check = reasonCheck)
@@ -331,8 +331,10 @@ async def add(ctx, mention):
 
 
 	if ctx.message.channel == allFormsChannel:
+		def check(message):
+			return not message.author.bot and message.channel == allFormsChannel
 		await allFormsChannel.send("Напишите ник игрока")
-		nickMessage = await bot.wait_for("message")
+		nickMessage = await bot.wait_for("message", check = check)
 		nick = nickMessage.content
 		discordUserID = int(mention[mention.find("@") + 2: len(mention) - 1])
 		user = lampartyGuild.get_member(int(discordUserID))

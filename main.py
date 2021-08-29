@@ -288,7 +288,7 @@ async def on_member_remove(member):
 def is_registred(discordUser):
 	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
-		if (str(discordUser.id) == user["discordID"]):
+		if (str(discordUser.id) == str(user["discordID"])):
 			return user
 	return False
 

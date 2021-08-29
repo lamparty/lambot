@@ -60,9 +60,11 @@ async def on_ready():
 
 	def getGuildAndRole():
 		global lampartyGuild
-		lampartyGuild = bot.get_guild(727245965345685514)
+		lampartyGuild = bot.get_guild(880870316870615100)
 		global playerRole
-		playerRole = discord.utils.get(lampartyGuild.roles, name = 'йухный ауфер') # change on 'игрок'
+		playerRole = discord.utils.get(lampartyGuild.roles, name = 'Игрок') # change on 'игрок'
+		global adminRole
+		adminRole = discord.utils.get(lampartyGuild.roles, name = 'Администратор')
 		pass
 	
 	async def createFormCategory():
@@ -235,7 +237,7 @@ async def on_reaction_add(reaction, user):
 			registredUsers = registredUsersCollection.find()
 			return collection.insert_one(data)	
 		
-		async def getMojangUUID(minecraftNick):  # using with "import requests" | put inside user class
+		async def getMojangUUID(minecraftNick):
 			mojangUUID = requests.get(
 				f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
 			return mojangUUID
@@ -251,7 +253,7 @@ async def on_reaction_add(reaction, user):
 				await discordUserFormChannel.delete()
 			await insertIntoDB(discordUserID, await getMojangUUID(minecraftNick), registredUsersCollection)
 
-			#await lamparty.executeCommand(f"whitelist add {minecraftNick}")
+			await lamparty.executeCommand(f"whitelist add {minecraftNick}")
 		pass
 
 	async def rejectForm(formMessage):
@@ -289,6 +291,7 @@ def is_registred(discordUser):
 	registredUsers = registredUsersCollection.find()
 	for user in registredUsers:
 		if (str(discordUser.id) == str(user["discordID"])):
+			print("registred")
 			return user
 	return False
 
@@ -312,5 +315,48 @@ async def restartForm(ctx, mention):
 		channel = discord.utils.find(lambda channel: user in channel.members, formsCategory.channels)
 		await channel.delete()
 		await createMemberChannel(user)
+
+@bot.command()
+async def add(ctx, mention):
+	async def insertIntoDB(discordUserID, minecraftUUID, collection):
+			data = {
+				"discordID": discordUserID,
+				"mojangUUID": minecraftUUID
+			}
+			registredUsers = registredUsersCollection.find()
+			return collection.insert_one(data)	
+	
+	async def getMojangUUID(minecraftNick):
+		return requests.get(f'https://api.mojang.com/users/profiles/minecraft/{minecraftNick}').json()['id']
+
+
+	if ctx.message.channel == allFormsChannel:
+		await allFormsChannel.send("Напишите ник игрока")
+		nickMessage = await bot.wait_for("message")
+		nick = nickMessage.content
+		discordUserID = int(mention[mention.find("@") + 2: len(mention) - 1])
+		user = lampartyGuild.get_member(int(discordUserID))
+		channel = discord.utils.find(lambda channel: user in channel.members, formsCategory.channels)
+		await channel.delete()
+		await user.add_roles(playerRole)
+		await user.edit(nick = nick)
+		await user.send(addedOnServerPhrase)
+		await insertIntoDB(user.id, await getMojangUUID(nick), registredUsersCollection)
+		await lamparty.executeCommand(f"whitelist add {nick}")
+		pass
+
+@bot.command()
+async def updateNicks(ctx):
+	if ctx.message.channel == allFormsChannel:
+		registredUsers = registredUsersCollection.find()
+		for user in registredUsers:
+			member = lampartyGuild.get_member(user["discordID"])
+			if(member):
+				print(member)#not adminRole in member.roles)
+				if (not adminRole in member.roles):
+					mojangUUID = user["mojangUUID"]
+					nicks = requests.get(f"https://api.mojang.com/user/profiles/{mojangUUID}/names").json()
+					await member.edit(nick = nicks[len(nicks) - 1]["name"])
+			
 
 bot.run("ODY4NjIxMDg2NjEzNDU5MDEz.YPyUbQ._KAVTEqDSJ7l0Mtm1delxSZI4bI")

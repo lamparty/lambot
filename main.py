@@ -184,7 +184,13 @@ async def on_reaction_add(reaction, user):
 							await clearForm(channel)
 							return False
 					botMessage = await channel.send(question)
-			userMessage = await bot.wait_for('message', timeout = 120.0, check = memberChannelCheck)
+			try:
+				userMessage = await bot.wait_for('message', timeout = 120.0, check = memberChannelCheck)
+			except asyncio.TimeoutError:
+					await memberChannel.set_permissions(member, send_messages = False, read_messages = True)
+					await waitReactionOnPhrase(channel, timeoutPhrase)
+					await clearForm(channel)
+					return False
 			await channel.send(endPhrase)
 			botMessage = await channel.send(retryPhrase)
 			await botMessage.add_reaction("\N{Llama}")

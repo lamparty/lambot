@@ -344,7 +344,9 @@ async def add(ctx, mention):
 		nick = nickMessage.content
 		discordUserID = int(mention[mention.find("@") + 2: len(mention) - 1])
 		user = lampartyGuild.get_member(int(discordUserID))
+		print("add func", user)
 		channel = discord.utils.find(lambda channel: user in channel.members, formsCategory.channels)
+		print("add func", channel)
 		await channel.delete()
 		await user.add_roles(playerRole)
 		await user.edit(nick = nick)

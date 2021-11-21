@@ -2,6 +2,7 @@
     "bot": {
         "token": "#",
         "prefix": "#",
+        "modules_path": "modules",
         "admin_role_name": "#",
         "voice_category_name": "#",
         "extensions_folder": "#"

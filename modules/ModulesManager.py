@@ -1,9 +1,14 @@
 import os
 from discord.ext import commands
+from discord.utils import get
 import json
 
 with open("settings.json", "r", encoding="utf-8") as f:
     settings = json.load(f)
+
+async def isAdministrator(ctx):
+    admin = get(ctx.guild.roles, name=settings["bot"]["admin_role_name"])
+    return admin in ctx.author.roles
 
 class ModulesManager(commands.Cog):
     def __init__(self, client: commands.Bot) -> None:

@@ -32,6 +32,17 @@ class Manager(commands.Cog):
     @commands.command()
     async def showModules(self, ctx):
         await ctx.send(self.client.extensions.keys())
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.__loadAllModules()
+
+    async def __loadAllModules(self):
+        modules_path = settings["bot"]["modules_path"]
+        for moduleFile in os.listdir(modules_path):
+            module = f"{modules_path}.{moduleFile[:-3]}"
+            if (moduleFile.endswith(".py") and not module in self.client.extensions):
+                self.client.load_extension(module)
 
 def setup(client):
     client.add_cog(Manager(client))

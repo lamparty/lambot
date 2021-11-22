@@ -10,6 +10,19 @@ class ModulesManager(commands.Cog):
         super().__init__()
         self.client = client
         self.path = settings["bot"]["modules_path"]
+    
+    @commands.command()
+    async def loadModule(self, ctx, *, extensionName):
+        self.client.load_extension(f"{self.path}.{extensionName}")
+
+    @commands.command()
+    async def unloadModule(self, ctx, *, extensionName):
+        self.client.unload_extension(f"{self.path}.{extensionName}")
+
+    @commands.command()
+    async def reloadModule(self, ctx, *, extensionName):
+        self.client.unload_extension(f"{self.path}.{extensionName}")
+        self.client.load_extension(f"{self.path}.{extensionName}")
 
 def setup(client):
     client.add_cog(ModulesManager(client))

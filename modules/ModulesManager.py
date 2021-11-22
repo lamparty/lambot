@@ -2,7 +2,7 @@ import os
 from discord.ext import commands
 import json
 
-with open("settings.json") as f:
+with open("settings.json", "r", encoding="utf-8") as f:
     settings = json.load(f)
 
 class ModulesManager(commands.Cog):

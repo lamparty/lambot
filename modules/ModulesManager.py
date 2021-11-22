@@ -29,6 +29,10 @@ class ModulesManager(commands.Cog):
         self.client.unload_extension(f"{self.path}.{extensionName}")
         self.client.load_extension(f"{self.path}.{extensionName}")
 
+    @commands.command()
+    async def showModules(self, ctx):
+        await ctx.send(self.client.extensions.keys())
+
 def setup(client):
     client.add_cog(ModulesManager(client))
 

@@ -10,7 +10,7 @@ async def isAdministrator(ctx):
     admin = get(ctx.guild.roles, name=settings["bot"]["admin_role_name"])
     return admin in ctx.author.roles
 
-class ModulesManager(commands.Cog):
+class Manager(commands.Cog):
     def __init__(self, client: commands.Bot) -> None:
         super().__init__()
         self.client = client
@@ -34,7 +34,7 @@ class ModulesManager(commands.Cog):
         await ctx.send(self.client.extensions.keys())
 
 def setup(client):
-    client.add_cog(ModulesManager(client))
+    client.add_cog(Manager(client))
 
 def teardown(client):
     client.remove_cog("ModulesManager")

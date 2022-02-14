@@ -105,3 +105,6 @@ dist
 
 # tsconfig build folder
 build/
+
+# config.json file
+config.json

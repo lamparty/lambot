@@ -1,9 +1,10 @@
-import LambotClient from "./LambotClient";
+import { CommandInteraction } from "discord.js";
 
 export type executeCommand = (interaction: CommandInteraction) => void;
 
-export interface ISwitchable {
-    load: (client: LambotClient) => void;
-    reload: (client: LambotClient) => void;
-    unload: (client: LambotClient) => void;
+export interface ILambotCommandOptions {
+    execute: executeCommand;
+    name: string,
+    description: string,
+    isGlobal: boolean,
 }

@@ -1,10 +1,11 @@
 import { Client, ClientOptions } from "discord.js";
 import { dirname } from 'path';
+import { executeCommand } from "./types";
 
 export default class LambotClient extends Client {
-    private static runPath: string = dirname(process.argv[1]);
+    private static readonly runPath: string = dirname(process.argv[1]);
 
-    public commands = new Map();
+    public commands: Map<string, executeCommand> = new Map();
     public events = new Map();
     public buttons = new Map();
 
@@ -13,6 +14,13 @@ export default class LambotClient extends Client {
 
         this.on('ready', async () => {
             await this.fetchCommands();
+        });
+
+        this.on('interactionCreate', interaction => {
+            if (!interaction.isCommand()) return;
+
+            const command = this.commands.get(interaction.commandName);
+            if (command) command(interaction);
         });
     }
 

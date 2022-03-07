@@ -10,8 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/lamparty/lambot.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "lamparty",
+  "license": "SEE LICENSE IN LICENSE.md",
   "bugs": {
     "url": "https://github.com/lamparty/lambot/issues"
   },

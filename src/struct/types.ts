@@ -1,6 +1,6 @@
 import LambotClient from "./LambotClient";
 
-export type assetType = 'commands' | 'events' | 'buttons';
+export type executeCommand = (interaction: CommandInteraction) => void;
 
 export interface ISwitchable {
     load: (client: LambotClient) => void;

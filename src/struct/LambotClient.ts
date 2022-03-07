@@ -10,5 +10,16 @@ export default class LambotClient extends Client {
 
     constructor(options: ClientOptions) {
         super(options);
+
+        this.on('ready', async () => {
+            await this.fetchCommands();
+        });
+    }
+
+    private async fetchCommands() {
+        await this.application?.commands.fetch();
+        this.guilds.cache.forEach(async guild => {
+            await guild.commands.fetch();
+        });
     }
 }

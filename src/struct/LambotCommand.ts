@@ -21,9 +21,9 @@ export default abstract class LambotCommand extends SlashCommandBuilder {
         this.client.commands.set(this.name, this.execute);
     }
     protected unregister(target: GuildApplicationCommandManager | ApplicationCommandManager) {
-        target.cache.forEach(command => {
-            command.delete();
-        });
+        target.cache
+            .filter(command => command.client.user?.id === this.client.user?.id)
+            .forEach(command => command.delete());
         this.client.commands.delete(this.name);
     }
 }

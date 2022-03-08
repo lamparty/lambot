@@ -52,4 +52,17 @@ export default class LambotClient extends Client {
             command.register();
         }
     }
+    public async unregisterCommands() {
+        this.application?.commands.cache.forEach(async command => {
+            await command.delete();
+        });
+
+        this.guilds.cache.forEach(guild => {
+            guild.commands.cache.forEach(async command => {
+                if (command.client.user?.id === this.user?.id) return;
+
+                await command.delete();
+            });
+        });
+    }
 }

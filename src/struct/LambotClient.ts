@@ -4,6 +4,7 @@ import { executeCommand, ILambotCommandOptions } from "./types";
 import { readdirSync } from 'fs';
 import path from 'path';
 import LambotGuildCommand from "./LambotGuildCommand";
+import LambotClientCommand from "./LambotClientCommand";
 
 export default class LambotClient extends Client {
     private static readonly runPath: string = dirname(process.argv[1]);
@@ -43,11 +44,12 @@ export default class LambotClient extends Client {
 
         for (const fileName of commandFiles) {
             const commandFilePath = path.join(commandsPath, fileName);
-            const command: ILambotCommandOptions = (await import(commandFilePath)).default;
-            
-            if (command.isGlobal) {
-                // create global command
-            } else new LambotGuildCommand(command, this);
+            const commandOptions: ILambotCommandOptions = (await import(commandFilePath)).default;
+
+            const command = commandOptions.isGlobal ? 
+                new LambotClientCommand(commandOptions, this) : 
+                new LambotGuildCommand(commandOptions, this);
+            command.register();
         }
     }
 }

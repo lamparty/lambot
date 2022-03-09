@@ -1,7 +1,7 @@
 import { Client, ClientOptions } from "discord.js";
 import { dirname } from 'path';
 import { executeCommand, ILambotCommandOptions } from "./types";
-import { readdirSync } from 'fs';
+import { readdirSync, existsSync } from 'fs';
 import path from 'path';
 import LambotGuildCommand from "./LambotGuildCommand";
 import LambotClientCommand from "./LambotClientCommand";
@@ -37,6 +37,7 @@ export default class LambotClient extends Client {
     }
     private async registerCommands() {
         const commandsPath = path.join(LambotClient.runPath, 'commands');
+        if (!existsSync(commandsPath)) return;
         const commandFiles = readdirSync(commandsPath)
             .filter(commandFile => commandFile.endsWith('js'))
             // files starts with dot symbol is hidden for bot

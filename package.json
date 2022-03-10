@@ -1,6 +1,6 @@
 {
   "name": "lambot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Discord bot based on discord.js",
   "main": "index.js",
   "scripts": {

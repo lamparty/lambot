@@ -27,5 +27,5 @@ export interface ILambotCommandOptions {
     name: string,
     description: string,
     isGlobal: boolean,
-    SlashCommandOptions?: Array<slashCommandOption>
+    slashCommandOptions?: Array<slashCommandOption>
 }

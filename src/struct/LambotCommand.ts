@@ -1,18 +1,18 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { ApplicationCommandManager, GuildApplicationCommandManager } from "discord.js";
-import { slashCommandOption, executeCommand } from "./types";
+import { executeCommand, ILambotCommandOptions } from "./types";
 import LambotClient from "./LambotClient";
 
 export default abstract class LambotCommand extends SlashCommandBuilder {
-    protected constructor(
-        protected readonly client: LambotClient, 
-        public readonly execute: executeCommand,
-        name: string,
-        description: string,
-        slashCommandOptions?: Array<slashCommandOption>,
-    ) {
+    protected readonly client: LambotClient;
+    public readonly execute: executeCommand;
+
+    public constructor(options: ILambotCommandOptions, client: LambotClient) {
+        const { execute, name, description, slashCommandOptions } = options;
         super();
 
+        this.client = client;
+        this.execute = execute;
         this.setName(name);
         this.setDescription(description);
 

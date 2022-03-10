@@ -4,9 +4,9 @@ import LambotClient from "./LambotClient";
 
 export default class LambotGuildCommand extends LambotCommand {
     constructor(options: ILambotCommandOptions, client: LambotClient) {
-        const { execute, name, description } = options;
+        const { execute, name, description, SlashCommandOptions } = options;
 
-        super(client, execute, name, description);
+        super(client, execute, name, description, SlashCommandOptions);
     }
 
     public override register(): void {

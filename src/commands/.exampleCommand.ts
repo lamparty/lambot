@@ -7,6 +7,9 @@ const command: ILambotCommandOptions = {
     name: "#", // name for command
     description: "#", // description for command 
     isGlobal: false, // true or false
+    SlashCommandOptions: [
+        // your options for command
+    ],
     execute: function (interaction: CommandInteraction): void {
         // here your handler code for command
     }

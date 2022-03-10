@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { ApplicationCommandManager, GuildApplicationCommandManager } from "discord.js";
-import { executeCommand } from "./types";
+import { slashCommandOption, executeCommand } from "./types";
 import LambotClient from "./LambotClient";
 
 export default abstract class LambotCommand extends SlashCommandBuilder {
@@ -8,12 +8,18 @@ export default abstract class LambotCommand extends SlashCommandBuilder {
         protected readonly client: LambotClient, 
         public readonly execute: executeCommand,
         name: string,
-        description: string
+        description: string,
+        slashCommandOptions?: Array<slashCommandOption>,
     ) {
         super();
 
         this.setName(name);
         this.setDescription(description);
+
+        if (!slashCommandOptions) return;
+        slashCommandOptions.forEach(option => {
+            this.options.push(option);
+        });
     }
 
     protected register(target: GuildApplicationCommandManager | ApplicationCommandManager) {

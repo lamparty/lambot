@@ -1,2 +1,2 @@
 # lambot
-discord bot for "lamparty" minecraft server
+Discord bot based on discord.js 
